@@ -1,13 +1,12 @@
 package com.anzelmas.cars.data
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+data class PopularCars(
+    val cars: List<Car>
+)
 
-@Entity(tableName = "cars")
-data class Car (
-    @PrimaryKey(autoGenerate = true)
+data class Car(
     val id: Int,
-    val plateNumber: String,
+    val numberPlate: String,
     val location: String,
     val model: String,
     val rate: String,

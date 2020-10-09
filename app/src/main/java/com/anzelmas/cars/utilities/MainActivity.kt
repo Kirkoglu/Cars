@@ -1,49 +1,42 @@
 package com.anzelmas.cars.utilities
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.anzelmas.cars.CarAdapter
 import com.anzelmas.cars.R
-import com.anzelmas.cars.data.Car
-import com.anzelmas.cars.data.CarService
-import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.anzelmas.cars.data.PopularCars
+import com.anzelmas.cars.data.ServiceBuilder
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
 
 class MainActivity : AppCompatActivity() {
-
-    lateinit var recyclerView: RecyclerView
-    lateinit var recyclerAdapter: CarAdapter
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        recyclerView = findViewById(R.id.recycler_view)
-        recyclerAdapter = CarAdapter(this)
-        recycler_view.layoutManager = LinearLayoutManager(this)
-        recycler_view.adapter = recyclerAdapter
-        recycler_view.setHasFixedSize(true)
+        val compositeDisposable = CompositeDisposable()
+        compositeDisposable.add(
+            ServiceBuilder.buildService().getAvailableCars(WEB_SERVICE_URL)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe({ response -> onResponse(response) }, { t -> onFailure(t) }))
     }
 
-    val carService = CarService.create().getCar()
+    private fun onFailure(t: Throwable) {
+        Toast.makeText(this, t.message, Toast.LENGTH_SHORT).show()
+    }
 
-    carService.enqueue(
-    object : Callback<List<Car>> {
-        override fun onResponse(call: Call<List<Car>>?, response: Response<List<Car>>?) {
-
-            if (response?.body() != null)
-                CarAdapter.setCarListItems(response.body()!!)
+    private fun onResponse(response: PopularCars) {
+        recyclerView.apply {
+            setHasFixedSize(true)
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = CarsAdapter(response.cars)
         }
+    }
+}
 
-        override fun onFailure(call: Call<List<Car>>?, t: Throwable?) {
-
-        }
-    })
 //    private fun generateCarList(size: Int): List<CarItem> {
 //        val list = ArrayList<CarItem>()
 //        for (i in 0 until size) {
@@ -56,5 +49,3 @@ class MainActivity : AppCompatActivity() {
 //            list += item
 //        }
 //        return list
-//    }
-}
